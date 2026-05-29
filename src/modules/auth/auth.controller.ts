@@ -1,4 +1,5 @@
 import { Body, Controller, Headers, HttpCode, HttpStatus, Post, UseGuards } from '@nestjs/common';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Public } from '../../common/decorators/public.decorator';
@@ -10,6 +11,7 @@ import { EmailVerifyDto } from './dto/email-verify.dto';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 
+@ApiTags('auth')
 @Controller('auth')
 export class AuthController {
   constructor(private readonly auth: AuthService) {}
@@ -45,6 +47,7 @@ export class AuthController {
     return this.auth.login(dto, userAgent);
   }
 
+  @ApiBearerAuth('refresh-token')
   @Public() //這邊設定跳過全域 token 驗證的原因是：這個路由的呼叫情境就是 token 過期的情境
   @UseGuards(JwtRefreshGuard)
   @Throttle({ default: { limit: 10, ttl: 60_000 } })
@@ -54,6 +57,7 @@ export class AuthController {
     return this.auth.refresh(user, userAgent);
   }
 
+  @ApiBearerAuth()
   @Post('logout')
   @HttpCode(HttpStatus.OK)
   logout(@CurrentUser() user: CurrentAuthUser) {
