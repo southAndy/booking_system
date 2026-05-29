@@ -203,6 +203,27 @@ export class AuthService {
     };
   }
 
+  async refresh(user: CurrentAuthUser, userAgent?: string) {
+    // rotation：撤銷此次使用的 refresh session，簽發全新的 token pair。
+    // signTokens 會建立新的 sessionId，舊 session 立即失效，降低被竊用風險。
+    if (user.sessionId) {
+      await this.sessions.update({ sessionId: user.sessionId }, { revoked: true });
+    }
+
+    const tokens = await this.signTokens(user.id, user.email, user.role, userAgent);
+
+    return {
+      data: {
+        tokens: {
+          access_token: tokens.accessToken,
+          refresh_token: tokens.refreshToken,
+          expires_in: tokens.expiresIn,
+        },
+      },
+      message: 'token refreshed',
+    };
+  }
+
   async logout(user: CurrentAuthUser) {
     if (user.sessionId) {
       await this.sessions.update({ sessionId: user.sessionId }, { revoked: true });
